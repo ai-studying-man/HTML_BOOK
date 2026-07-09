@@ -1,0 +1,835 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="{{COURSE_DESCRIPTION}}">
+  <title>{{COURSE_TITLE}}</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --color-workspace: #20242b;
+      --color-workspace-soft: #2d333d;
+      --color-page: #fbfaf7;
+      --color-ink: #1f2328;
+      --color-muted: #667085;
+      --color-line: #d8dee4;
+      --color-accent: #315f72;
+      --color-accent-soft: #e7f0f3;
+      --shadow-page: 0 22px 70px rgba(0, 0, 0, 0.38);
+      --toolbar-height: 64px;
+      --side-control: 44px;
+      --page-width: 760px;
+      --page-ratio: 0.6923;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    body {
+      background: var(--color-workspace);
+      color: var(--color-ink);
+      font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    a:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--color-accent) 50%, white);
+      outline-offset: 3px;
+    }
+
+    .viewer {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      grid-template-rows: 1fr var(--toolbar-height);
+      background:
+        radial-gradient(circle at center top, rgba(255, 255, 255, 0.08), transparent 38%),
+        var(--color-workspace);
+    }
+
+    .stage {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 0;
+      padding: 24px 76px;
+      overflow: hidden;
+    }
+
+    .page-shell {
+      width: min(var(--page-width), calc((100vh - var(--toolbar-height) - 48px) * var(--page-ratio)));
+      max-width: calc(100vw - 170px);
+      aspect-ratio: 9 / 13;
+      perspective: 1600px;
+    }
+
+    .lecture-page {
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      border: 1px solid rgba(255, 255, 255, 0.38);
+      border-radius: 3px;
+      background: var(--color-page);
+      box-shadow: var(--shadow-page);
+      transform-origin: left center;
+      transition: transform 220ms ease, opacity 180ms ease;
+    }
+
+    .lecture-page.is-turning {
+      opacity: 0.86;
+      transform: rotateY(-3deg) translateX(10px);
+    }
+
+    .page-inner {
+      min-height: 100%;
+      padding: clamp(30px, 5vw, 58px);
+    }
+
+    .page-label {
+      margin: 0 0 12px;
+      color: var(--color-accent);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    h1 {
+      margin: 0 0 22px;
+      color: var(--color-ink);
+      font-size: clamp(28px, 4.6vw, 42px);
+      line-height: 1.18;
+      letter-spacing: 0;
+      word-break: keep-all;
+    }
+
+    h2 {
+      margin: 34px 0 12px;
+      border-bottom: 1px solid var(--color-line);
+      padding-bottom: 8px;
+      font-size: 22px;
+      line-height: 1.35;
+      letter-spacing: 0;
+      word-break: keep-all;
+    }
+
+    h3 {
+      margin: 24px 0 8px;
+      font-size: 18px;
+      line-height: 1.4;
+      letter-spacing: 0;
+      word-break: keep-all;
+    }
+
+    p,
+    ul,
+    ol,
+    table {
+      margin-top: 0;
+      margin-bottom: 16px;
+    }
+
+    ul,
+    ol {
+      padding-left: 1.35rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      font-size: 14px;
+    }
+
+    th,
+    td {
+      border: 1px solid var(--color-line);
+      padding: 9px 10px;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--color-accent-soft);
+      text-align: left;
+    }
+
+    .callout {
+      margin: 22px 0;
+      border: 1px solid var(--color-line);
+      border-left: 5px solid var(--color-accent);
+      border-radius: 8px;
+      background: #fff;
+      padding: 14px 16px;
+    }
+
+    .callout strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .side-button {
+      position: absolute;
+      top: calc(50% - var(--toolbar-height) / 2);
+      display: grid;
+      width: var(--side-control);
+      height: var(--side-control);
+      place-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 26px;
+      transform: translateY(-50%);
+    }
+
+    .side-button:hover {
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    .side-button:disabled {
+      cursor: default;
+      opacity: 0.35;
+    }
+
+    .side-button.prev {
+      left: 22px;
+    }
+
+    .side-button.next {
+      right: 22px;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(23, 27, 33, 0.96);
+      padding: 10px 24px;
+      color: white;
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .tool-button {
+      display: grid;
+      min-width: 38px;
+      height: 38px;
+      place-items: center;
+      border-radius: 8px;
+      background: transparent;
+      color: white;
+      font-size: 16px;
+    }
+
+    .tool-button:hover,
+    .tool-button[aria-expanded="true"] {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .page-jump {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: rgba(255, 255, 255, 0.74);
+      font-size: 14px;
+    }
+
+    .page-jump input {
+      width: 54px;
+      height: 32px;
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      border-radius: 7px;
+      background: rgba(255, 255, 255, 0.08);
+      color: white;
+      text-align: center;
+    }
+
+    .progress {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 13px;
+    }
+
+    .progress-track {
+      position: relative;
+      height: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .progress-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 0;
+      border-radius: inherit;
+      background: var(--color-accent);
+      transition: width 160ms ease;
+    }
+
+    .drawer {
+      position: fixed;
+      top: 0;
+      bottom: var(--toolbar-height);
+      left: 0;
+      z-index: 20;
+      width: min(360px, 88vw);
+      border-right: 1px solid rgba(255, 255, 255, 0.12);
+      background: #f7f9fa;
+      box-shadow: 12px 0 40px rgba(0, 0, 0, 0.28);
+      transform: translateX(-105%);
+      transition: transform 200ms ease;
+    }
+
+    .drawer.is-open {
+      transform: translateX(0);
+    }
+
+    .drawer.right {
+      right: 0;
+      left: auto;
+      border-right: 0;
+      border-left: 1px solid rgba(255, 255, 255, 0.12);
+      transform: translateX(105%);
+    }
+
+    .drawer.right.is-open {
+      transform: translateX(0);
+    }
+
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--color-line);
+      padding: 18px 18px 14px;
+    }
+
+    .drawer-title {
+      margin: 0;
+      color: var(--color-ink);
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .drawer-close {
+      width: 34px;
+      height: 34px;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--color-ink);
+      font-size: 20px;
+    }
+
+    .drawer-close:hover {
+      background: var(--color-accent-soft);
+    }
+
+    .drawer-body {
+      height: calc(100% - 68px);
+      overflow: auto;
+      padding: 16px 18px 22px;
+    }
+
+    .toc-list,
+    .search-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .toc-item,
+    .search-item {
+      width: 100%;
+      border-radius: 8px;
+      background: transparent;
+      padding: 10px 11px;
+      color: var(--color-ink);
+      text-align: left;
+    }
+
+    .toc-item:hover,
+    .toc-item.is-active,
+    .search-item:hover {
+      background: var(--color-accent-soft);
+    }
+
+    .toc-item small,
+    .search-item small {
+      display: block;
+      margin-top: 2px;
+      color: var(--color-muted);
+      font-size: 12px;
+    }
+
+    .thumb-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .thumb {
+      border: 2px solid transparent;
+      border-radius: 8px;
+      background: white;
+      padding: 7px;
+      text-align: left;
+    }
+
+    .thumb.is-active,
+    .thumb:hover {
+      border-color: var(--color-accent);
+    }
+
+    .thumb-preview {
+      display: grid;
+      min-height: 132px;
+      place-items: center;
+      border: 1px solid var(--color-line);
+      border-radius: 4px;
+      background: var(--color-page);
+      color: var(--color-accent);
+      font-weight: 800;
+    }
+
+    .thumb-title {
+      display: block;
+      margin-top: 7px;
+      color: var(--color-ink);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .search-box {
+      display: grid;
+      gap: 10px;
+    }
+
+    .search-box input {
+      width: 100%;
+      height: 40px;
+      border: 1px solid var(--color-line);
+      border-radius: 8px;
+      padding: 0 12px;
+    }
+
+    .empty {
+      margin: 20px 0 0;
+      color: var(--color-muted);
+      font-size: 14px;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    @media (max-width: 760px) {
+      :root {
+        --toolbar-height: 92px;
+      }
+
+      .stage {
+        padding: 18px 14px 22px;
+      }
+
+      .page-shell {
+        width: min(100%, calc((100vh - var(--toolbar-height) - 44px) * var(--page-ratio)));
+        max-width: 100%;
+      }
+
+      .page-inner {
+        padding: 26px 22px;
+      }
+
+      .side-button {
+        display: none;
+      }
+
+      .toolbar {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        padding: 8px 12px;
+      }
+
+      .toolbar-group {
+        justify-content: center;
+      }
+
+      .progress {
+        order: -1;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.001ms !important;
+        animation-duration: 0.001ms !important;
+      }
+    }
+
+    @media print {
+      html,
+      body {
+        height: auto;
+        overflow: visible;
+        background: white;
+      }
+
+      .viewer,
+      .stage,
+      .page-shell,
+      .lecture-page {
+        position: static;
+        display: block;
+        width: auto;
+        height: auto;
+        max-width: none;
+        overflow: visible;
+        background: white;
+        box-shadow: none;
+      }
+
+      .toolbar,
+      .side-button,
+      .drawer {
+        display: none;
+      }
+
+      .page-inner {
+        min-height: 100vh;
+        break-after: page;
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="viewer" data-viewer>
+    <section class="stage" aria-label="강의록 페이지">
+      <button class="side-button prev" type="button" data-prev aria-label="이전 페이지">‹</button>
+      <div class="page-shell">
+        <article class="lecture-page" data-page aria-live="polite"></article>
+      </div>
+      <button class="side-button next" type="button" data-next aria-label="다음 페이지">›</button>
+    </section>
+
+    <footer class="toolbar" aria-label="강의록 도구 모음">
+      <div class="toolbar-group">
+        <button class="tool-button" type="button" data-first aria-label="첫 페이지">|‹</button>
+        <button class="tool-button" type="button" data-prev aria-label="이전 페이지">‹</button>
+        <div class="page-jump">
+          <label class="sr-only" for="pageInput">페이지 번호</label>
+          <input id="pageInput" inputmode="numeric" pattern="[0-9]*" data-page-input aria-label="페이지 번호">
+          <span data-page-total>/ 0</span>
+        </div>
+        <button class="tool-button" type="button" data-next aria-label="다음 페이지">›</button>
+        <button class="tool-button" type="button" data-last aria-label="마지막 페이지">›|</button>
+      </div>
+
+      <div class="progress" aria-label="읽기 진행률">
+        <span data-progress-start>1</span>
+        <div class="progress-track"><span class="progress-fill" data-progress-fill></span></div>
+        <span data-progress-end>0</span>
+      </div>
+
+      <div class="toolbar-group">
+        <button class="tool-button" type="button" data-open="search" aria-controls="searchDrawer" aria-expanded="false" aria-label="검색">검색</button>
+        <button class="tool-button" type="button" data-open="toc" aria-controls="tocDrawer" aria-expanded="false" aria-label="목차">목차</button>
+        <button class="tool-button" type="button" data-open="thumbs" aria-controls="thumbDrawer" aria-expanded="false" aria-label="썸네일">보기</button>
+      </div>
+    </footer>
+  </div>
+
+  <aside class="drawer" id="tocDrawer" data-drawer="toc" aria-label="목차">
+    <header class="drawer-header">
+      <p class="drawer-title">목차</p>
+      <button class="drawer-close" type="button" data-close aria-label="목차 닫기">×</button>
+    </header>
+    <div class="drawer-body">
+      <ol class="toc-list" data-toc></ol>
+    </div>
+  </aside>
+
+  <aside class="drawer right" id="thumbDrawer" data-drawer="thumbs" aria-label="썸네일">
+    <header class="drawer-header">
+      <p class="drawer-title">페이지 보기</p>
+      <button class="drawer-close" type="button" data-close aria-label="썸네일 닫기">×</button>
+    </header>
+    <div class="drawer-body">
+      <div class="thumb-grid" data-thumbs></div>
+    </div>
+  </aside>
+
+  <aside class="drawer" id="searchDrawer" data-drawer="search" aria-label="검색">
+    <header class="drawer-header">
+      <p class="drawer-title">검색</p>
+      <button class="drawer-close" type="button" data-close aria-label="검색 닫기">×</button>
+    </header>
+    <div class="drawer-body">
+      <div class="search-box">
+        <label class="sr-only" for="searchInput">검색어</label>
+        <input id="searchInput" data-search-input type="search" placeholder="강의록에서 검색">
+        <ul class="search-list" data-search-results></ul>
+      </div>
+    </div>
+  </aside>
+
+  <script type="application/json" id="lecture-data">
+    {
+      "courseTitle": "{{COURSE_TITLE}}",
+      "description": "{{COURSE_DESCRIPTION}}",
+      "pages": [
+        {
+          "label": "1강 / 기본 개념",
+          "title": "방위사업 계약 절차 이해",
+          "summary": "절차의 흐름과 주요 용어를 정리한다.",
+          "sections": [
+            {
+              "heading": "개요",
+              "html": "<p>이 페이지는 수업 자료의 핵심 흐름을 HTML 강의록 형식으로 재구성한 예시입니다.</p>"
+            },
+            {
+              "heading": "핵심 개념",
+              "html": "<ul><li>요구사항 정의, 입찰 공고, 평가, 계약 체결은 서로 연결된 절차입니다.</li></ul>"
+            },
+            {
+              "heading": "정리",
+              "html": "<div class=\"callout\"><strong>학습 체크포인트</strong><p>각 단계의 목적과 다음 단계로 넘어가기 위한 조건을 설명할 수 있어야 합니다.</p></div>"
+            }
+          ]
+        },
+        {
+          "label": "2강 / 실습",
+          "title": "강의록 변환 실습",
+          "summary": "TXT 자료를 페이지 단위 HTML 강의안으로 바꾸는 방식입니다.",
+          "sections": [
+            {
+              "heading": "자료 정리",
+              "html": "<p>원문에서 제목, 절차, 예시, 주의사항을 추출하고 학습자가 따라가기 쉬운 순서로 재배치합니다.</p>"
+            },
+            {
+              "heading": "배포 방식",
+              "html": "<p>생성된 파일은 정적 HTML 하나로 배포할 수 있으며, CSS와 JavaScript가 페이지 이동과 검색을 보완합니다.</p>"
+            }
+          ]
+        }
+      ]
+    }
+  </script>
+
+  <script>
+    (() => {
+      const data = JSON.parse(document.getElementById("lecture-data").textContent);
+      const pages = data.pages;
+      const pageEl = document.querySelector("[data-page]");
+      const pageInput = document.querySelector("[data-page-input]");
+      const pageTotal = document.querySelector("[data-page-total]");
+      const progressFill = document.querySelector("[data-progress-fill]");
+      const progressStart = document.querySelector("[data-progress-start]");
+      const progressEnd = document.querySelector("[data-progress-end]");
+      const tocEl = document.querySelector("[data-toc]");
+      const thumbsEl = document.querySelector("[data-thumbs]");
+      const searchInput = document.querySelector("[data-search-input]");
+      const searchResults = document.querySelector("[data-search-results]");
+      let currentIndex = readHashPage();
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;");
+      }
+
+      function readHashPage() {
+        const match = location.hash.match(/p=(\d+)/);
+        const pageNumber = match ? Number(match[1]) : 1;
+        return clamp(pageNumber - 1, 0, pages.length - 1);
+      }
+
+      function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
+      }
+
+      function pageText(page) {
+        return `${page.label} ${page.title} ${page.summary} ${page.sections.map((section) => `${section.heading} ${section.html.replace(/<[^>]+>/g, " ")}`).join(" ")}`;
+      }
+
+      function renderPage(index) {
+        const page = pages[index];
+        pageEl.classList.add("is-turning");
+        window.setTimeout(() => pageEl.classList.remove("is-turning"), 180);
+        pageEl.innerHTML = `
+          <div class="page-inner">
+            <p class="page-label">${escapeHtml(page.label)}</p>
+            <h1>${escapeHtml(page.title)}</h1>
+            ${page.sections.map((section) => `
+              <section>
+                <h2>${escapeHtml(section.heading)}</h2>
+                ${section.html}
+              </section>
+            `).join("")}
+          </div>
+        `;
+        pageInput.value = String(index + 1);
+        pageTotal.textContent = `/ ${pages.length}`;
+        progressStart.textContent = String(index + 1);
+        progressEnd.textContent = String(pages.length);
+        progressFill.style.width = `${((index + 1) / pages.length) * 100}%`;
+        document.title = `${page.title} - ${data.courseTitle}`;
+        document.querySelectorAll("[data-prev]").forEach((button) => {
+          button.disabled = index === 0;
+        });
+        document.querySelectorAll("[data-next]").forEach((button) => {
+          button.disabled = index === pages.length - 1;
+        });
+        document.querySelectorAll(".toc-item, .thumb").forEach((item) => {
+          item.classList.toggle("is-active", Number(item.dataset.index) === index);
+        });
+      }
+
+      function goToPage(index, updateHash = true) {
+        currentIndex = clamp(index, 0, pages.length - 1);
+        if (updateHash) {
+          history.replaceState(null, "", `#p=${currentIndex + 1}`);
+        }
+        renderPage(currentIndex);
+      }
+
+      function renderNavigation() {
+        tocEl.innerHTML = pages.map((page, index) => `
+          <li>
+            <button class="toc-item" type="button" data-index="${index}">
+              ${escapeHtml(page.title)}
+              <small>${escapeHtml(page.label)} · ${escapeHtml(page.summary)}</small>
+            </button>
+          </li>
+        `).join("");
+
+        thumbsEl.innerHTML = pages.map((page, index) => `
+          <button class="thumb" type="button" data-index="${index}">
+            <span class="thumb-preview">${String(index + 1).padStart(2, "0")}</span>
+            <span class="thumb-title">${escapeHtml(page.title)}</span>
+          </button>
+        `).join("");
+      }
+
+      function openDrawer(name) {
+        document.querySelectorAll("[data-drawer]").forEach((drawer) => {
+          drawer.classList.toggle("is-open", drawer.dataset.drawer === name);
+        });
+        document.querySelectorAll("[data-open]").forEach((button) => {
+          button.setAttribute("aria-expanded", String(button.dataset.open === name));
+        });
+      }
+
+      function closeDrawers() {
+        document.querySelectorAll("[data-drawer]").forEach((drawer) => drawer.classList.remove("is-open"));
+        document.querySelectorAll("[data-open]").forEach((button) => button.setAttribute("aria-expanded", "false"));
+      }
+
+      function renderSearch(query) {
+        const normalized = query.trim().toLowerCase();
+        if (!normalized) {
+          searchResults.innerHTML = "<li class=\"empty\">검색어를 입력하면 관련 페이지가 표시됩니다.</li>";
+          return;
+        }
+
+        const matches = pages
+          .map((page, index) => ({ page, index, text: pageText(page).toLowerCase() }))
+          .filter((entry) => entry.text.includes(normalized));
+
+        searchResults.innerHTML = matches.length
+          ? matches.map(({ page, index }) => `
+            <li>
+              <button class="search-item" type="button" data-index="${index}">
+                ${escapeHtml(page.title)}
+                <small>${escapeHtml(page.label)} · ${escapeHtml(page.summary)}</small>
+              </button>
+            </li>
+          `).join("")
+          : "<li class=\"empty\">검색 결과가 없습니다.</li>";
+      }
+
+      document.addEventListener("click", (event) => {
+        const target = event.target.closest("button");
+        if (!target) return;
+        if (target.matches("[data-prev]")) goToPage(currentIndex - 1);
+        if (target.matches("[data-next]")) goToPage(currentIndex + 1);
+        if (target.matches("[data-first]")) goToPage(0);
+        if (target.matches("[data-last]")) goToPage(pages.length - 1);
+        if (target.matches("[data-open]")) openDrawer(target.dataset.open);
+        if (target.matches("[data-close]")) closeDrawers();
+        if (target.matches(".toc-item, .thumb, .search-item")) {
+          goToPage(Number(target.dataset.index));
+          closeDrawers();
+        }
+      });
+
+      pageInput.addEventListener("change", () => {
+        goToPage(Number(pageInput.value) - 1);
+      });
+
+      searchInput.addEventListener("input", () => {
+        renderSearch(searchInput.value);
+      });
+
+      window.addEventListener("hashchange", () => {
+        goToPage(readHashPage(), false);
+      });
+
+      window.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") closeDrawers();
+        if (event.target.matches("input")) return;
+        if (event.key === "ArrowLeft") goToPage(currentIndex - 1);
+        if (event.key === "ArrowRight") goToPage(currentIndex + 1);
+      });
+
+      renderNavigation();
+      renderSearch("");
+      goToPage(currentIndex, location.hash !== `#p=${currentIndex + 1}`);
+    })();
+  </script>
+</body>
+</html>
