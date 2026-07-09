@@ -1,93 +1,110 @@
 # HTML Book Skills
 
-Reusable agent skills for turning text-based class material into static HTML lecture books. This repository keeps each skill in the common `SKILL.md` folder format, then adds lightweight guidance so the same content can be used from Codex, Claude, and Gemini CLI workflows.
+수업 자료, 강의 원고, TXT 문서를 정적 HTML 강의록으로 바꾸기 위한 에이전트 스킬 저장소입니다. 핵심 스킬은 `txt-to-html-lecture-notes`이며, 단순 HTML 문서뿐 아니라 목차, 썸네일, 검색, 페이지 이동이 있는 정적 웹 강의록 뷰어를 만들 수 있도록 설계되어 있습니다.
 
-## Repository Layout
+## 데모
 
-```text
-.
-├── AGENTS.md                  # Shared repository instructions for agent CLIs
-├── CLAUDE.md                  # Claude entrypoint shim
-├── GEMINI.md                  # Gemini entrypoint shim
-├── docs/
-│   └── PORTABILITY.md         # Cross-agent compatibility notes
-├── scripts/
-│   └── validate-skills.mjs    # Local validation for skill folders
-├── skills/
-│   ├── txt-to-html-lecture-notes/
-│   └── example-dapa-skill/    # Replace or copy when creating real skills
-└── templates/
-    └── skill/                 # Starter template for new skills
-```
+GitHub Pages 데모는 TXT 자료가 HTML 강의록 뷰어로 변환되는 흐름을 영상처럼 보여줍니다.
 
-## Skill Rules
+- 데모 주소: https://ai-studying-man.github.io/HTML_BOOK/
+- 데모 파일: `docs/index.html`
 
-- Put one skill per folder under `skills/<skill-name>/`.
-- Use lowercase hyphenated folder names: `dapa-news-brief`, not `DAPA News Brief`.
-- Make `SKILL.md` the canonical source of truth.
-- Keep `SKILL.md` concise and move long domain material into `references/`.
-- Use `scripts/` only for repeatable deterministic work.
-- Do not include secrets, tokens, private data dumps, or generated caches.
+## 설치
 
-## Install With NPM
-
-Install the HTML lecture-note viewer skill with the Skills CLI:
+Skills CLI를 통해 설치합니다.
 
 ```bash
 npx skills add https://github.com/ai-studying-man/HTML_BOOK.git --skill txt-to-html-lecture-notes -g -y
 ```
 
-Install it globally for every global-capable agent target detected by the Skills CLI, including agents such as Claude Code, Codex, Gemini CLI, Antigravity, Cursor, and others:
+지원 가능한 모든 글로벌 에이전트 대상에 설치하려면 다음 명령을 사용합니다. Claude Code, Codex, Gemini CLI, Antigravity, Cursor 등 Skills CLI가 감지한 대상에 설치됩니다.
 
 ```bash
 npx skills add https://github.com/ai-studying-man/HTML_BOOK.git --skill txt-to-html-lecture-notes --agent "*" -g -y
 ```
 
-Some agents do not support global skill installation. If the CLI reports those as skipped or failed while also saying `Installed 1 skill`, the reusable skill was still installed for the supported global targets.
+일부 에이전트는 글로벌 스킬 설치를 지원하지 않습니다. CLI가 일부 대상을 실패 또는 건너뜀으로 표시하더라도 `Installed 1 skill`이 함께 표시되면 지원 가능한 글로벌 대상에는 설치된 것입니다.
 
-Install it for selected agents only:
+특정 에이전트만 지정해서 설치할 수도 있습니다.
 
 ```bash
 npx skills add https://github.com/ai-studying-man/HTML_BOOK.git --skill txt-to-html-lecture-notes --agent claude-code codex gemini-cli antigravity -g -y
 ```
 
-Check what is installed:
+설치 상태 확인:
 
 ```bash
 npx skills list -g --json
 ```
 
-Use the skill by asking an agent for work such as:
+## 사용 예시
+
+에이전트에게 다음처럼 요청합니다.
 
 ```text
-Use txt-to-html-lecture-notes to convert this TXT lecture material into a static HTML lecture viewer.
+txt-to-html-lecture-notes를 사용해서 이 TXT 강의 자료를 정적 HTML 강의록 뷰어로 변환해줘.
 ```
 
-## Create A New Skill
+스킬은 보통 다음 흐름으로 동작합니다.
 
-Copy the template:
+1. TXT 수업 자료에서 제목, 페이지 경계, 핵심 개념, 예시, 주의사항을 찾습니다.
+2. 내용을 페이지 단위 강의록 데이터로 정리합니다.
+3. `assets/lecture-page-template.html`을 기반으로 정적 HTML 뷰어를 만듭니다.
+4. 목차, 썸네일, 검색, 페이지 이동, `#p=페이지번호` 링크를 검증합니다.
+
+## 저장소 구조
+
+```text
+.
+├── AGENTS.md
+├── CLAUDE.md
+├── GEMINI.md
+├── DESIGN.md
+├── docs/
+│   ├── index.html
+│   └── PORTABILITY.md
+├── scripts/
+│   └── validate-skills.mjs
+├── skills/
+│   ├── txt-to-html-lecture-notes/
+│   └── example-dapa-skill/
+└── templates/
+    └── skill/
+```
+
+## 스킬 작성 규칙
+
+- 스킬은 `skills/<skill-name>/` 아래에 하나씩 둡니다.
+- 폴더명은 소문자와 하이픈만 사용합니다.
+- `SKILL.md`를 스킬의 기준 문서로 둡니다.
+- 긴 도메인 지식은 `references/`로 분리합니다.
+- 반복 가능한 처리 코드는 `scripts/`에 둡니다.
+- 출력 템플릿과 정적 리소스는 `assets/`에 둡니다.
+- 토큰, API 키, 개인 문서, 생성 캐시, 로컬 로그는 커밋하지 않습니다.
+
+## 새 스킬 만들기
 
 ```bash
 cp -R templates/skill skills/my-new-skill
 ```
 
-Then update:
+수정할 파일:
 
 - `skills/my-new-skill/SKILL.md`
-- optional `skills/my-new-skill/references/`
-- optional `skills/my-new-skill/scripts/`
-- optional `skills/my-new-skill/assets/`
+- 필요한 경우 `skills/my-new-skill/references/`
+- 필요한 경우 `skills/my-new-skill/scripts/`
+- 필요한 경우 `skills/my-new-skill/assets/`
 
-Run validation:
+검증:
 
 ```bash
 npm run validate
 ```
 
-## GitHub Remote
+## 배포
 
-This workspace is intended to publish to:
+이 저장소는 다음 GitHub 저장소에 배포됩니다.
 
 https://github.com/ai-studying-man/HTML_BOOK.git
 
-Commit and push only after reviewing the generated scaffold and replacing the example skill with your first real skill.
+GitHub Pages 데모는 `.github/workflows/pages.yml` 워크플로우가 `docs/` 폴더를 배포하도록 구성되어 있습니다.
