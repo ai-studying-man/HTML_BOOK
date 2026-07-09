@@ -108,3 +108,12 @@ npm run validate
 https://github.com/ai-studying-man/HTML_BOOK.git
 
 GitHub Pages 데모는 `.github/workflows/pages.yml` 워크플로우가 `docs/` 폴더를 배포하도록 구성되어 있습니다.
+
+최초 배포 전에 GitHub 저장소에서 한 번만 Pages 소스를 지정합니다.
+
+1. GitHub 저장소의 `Settings`로 이동합니다.
+2. 왼쪽 메뉴에서 `Pages`를 엽니다.
+3. `Build and deployment`의 `Source`를 `GitHub Actions`로 선택합니다.
+4. 이후 `main` 브랜치에 푸시하면 `.github/workflows/pages.yml`이 `docs/` 폴더를 GitHub Pages로 배포합니다.
+
+설정 전에는 Actions가 실행되더라도 `Resource not accessible by integration` 또는 `Get Pages site failed` 오류가 발생할 수 있습니다.
