@@ -29,6 +29,40 @@ Reusable agent skills for turning text-based class material into static HTML lec
 - Use `scripts/` only for repeatable deterministic work.
 - Do not include secrets, tokens, private data dumps, or generated caches.
 
+## Install With NPM
+
+Install the HTML lecture-note viewer skill with the Skills CLI:
+
+```bash
+npx skills add https://github.com/ai-studying-man/HTML_BOOK.git --skill txt-to-html-lecture-notes -g -y
+```
+
+Install it globally for every global-capable agent target detected by the Skills CLI, including agents such as Claude Code, Codex, Gemini CLI, Antigravity, Cursor, and others:
+
+```bash
+npx skills add https://github.com/ai-studying-man/HTML_BOOK.git --skill txt-to-html-lecture-notes --agent "*" -g -y
+```
+
+Some agents do not support global skill installation. If the CLI reports those as skipped or failed while also saying `Installed 1 skill`, the reusable skill was still installed for the supported global targets.
+
+Install it for selected agents only:
+
+```bash
+npx skills add https://github.com/ai-studying-man/HTML_BOOK.git --skill txt-to-html-lecture-notes --agent claude-code codex gemini-cli antigravity -g -y
+```
+
+Check what is installed:
+
+```bash
+npx skills list -g --json
+```
+
+Use the skill by asking an agent for work such as:
+
+```text
+Use txt-to-html-lecture-notes to convert this TXT lecture material into a static HTML lecture viewer.
+```
+
 ## Create A New Skill
 
 Copy the template:
