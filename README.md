@@ -2,6 +2,8 @@
 
 수업 자료, 강의 원고, TXT 문서를 정적 HTML 강의록으로 바꾸기 위한 에이전트 스킬 저장소입니다. 핵심 스킬은 `txt-to-html-lecture-notes`이며, 단순 HTML 문서뿐 아니라 목차, 썸네일, 검색, 페이지 이동이 있는 정적 웹 강의록 뷰어를 만들 수 있도록 설계되어 있습니다.
 
+![TXT 자료를 HTML 강의록으로 변환하는 데모](docs/assets/html-book-intro.gif)
+
 ## 데모
 
 GitHub Pages 데모는 TXT 자료가 HTML 강의록 뷰어로 변환되는 흐름을 영상처럼 보여줍니다.
